@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [Unreleased]
+
+### Features
+
+- Add a global `priority` pattern option to choose which page to link when identifiers appear in multiple pages.
+
 ## [1.4.2](https://github.com/mkdocstrings/autorefs/releases/tag/1.4.2) - 2025-05-20
 
 <small>[Compare with 1.4.1](https://github.com/mkdocstrings/autorefs/compare/1.4.1...1.4.2)</small>

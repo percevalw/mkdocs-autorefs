@@ -216,3 +216,15 @@ def test_explicit_strip_tags(strip_title_tags: bool) -> None:
     plugin.config.strip_title_tags = strip_title_tags
     plugin.on_config(config=MkDocsConfig())
     assert plugin._strip_title_tags is strip_title_tags
+
+
+def test_priority_config() -> None:
+    """Prioritize pages when identifiers exist multiple times."""
+    plugin = AutorefsPlugin()
+    plugin.config = AutorefsConfig()
+    plugin.config.priority = [".*", "reference", "foo"]
+    plugin.register_anchor(identifier="bar.baz", page=create_page("reference/baz.html"), primary=True)
+    plugin.register_anchor(identifier="bar.baz", page=create_page("baz.html"), primary=True)
+    plugin.register_anchor(identifier="bar.baz", page=create_page("foo/bar/baz.html"), primary=True)
+
+    assert plugin.get_item_url("bar.baz") == ("baz.html#bar.baz", None)

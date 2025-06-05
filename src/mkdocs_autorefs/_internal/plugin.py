@@ -14,11 +14,12 @@ import logging
 from collections import defaultdict
 from pathlib import PurePosixPath as URL  # noqa: N814
 from typing import TYPE_CHECKING, Any, Callable, Literal
+import re
 from urllib.parse import urlsplit
 from warnings import warn
 
 from mkdocs.config.base import Config
-from mkdocs.config.config_options import Choice, Type
+from mkdocs.config.config_options import Choice, Type, ListOfItems
 from mkdocs.plugins import BasePlugin, event_priority
 from mkdocs.structure.pages import Page
 
@@ -85,6 +86,9 @@ class AutorefsConfig(Config):
     - `"auto"`: strip tags unless the Material for MkDocs theme is detected.
     """
 
+    priority: list[str] = ListOfItems(Type(str), default=[])  # type: ignore[assignment]
+    """Prioritize pages when several provide the same identifier."""
+
 
 class AutorefsPlugin(BasePlugin[AutorefsConfig]):
     """The `autorefs` plugin for `mkdocs`.
@@ -149,8 +153,30 @@ class AutorefsPlugin(BasePlugin[AutorefsConfig]):
         # YORE: Bump 2: Remove line.
         self._url_to_page: dict[str, Page] = {}
 
+        self._priority_patterns: list[re.Pattern[str]] | None = None
+
         self._link_titles: bool | Literal["external"] = True
         self._strip_title_tags: bool = False
+
+    @property
+    def priority_patterns(self) -> list[re.Pattern[str]]:
+        if self._priority_patterns is None:
+            if isinstance(self.config, dict):
+                patterns = self.config.get("priority", [])
+            else:
+                patterns = self.config.priority
+            self._priority_patterns = [
+                re.compile("/" + pat.lstrip("/")) for pat in patterns
+            ]
+        return self._priority_patterns
+
+    def _get_priority_index(self, url: str) -> int:
+        url = "/" + url.split("#", 1)[0]
+        rev = list(enumerate(self.priority_patterns))[::-1]
+        for idx, pattern in rev:
+            if pattern.search(url):
+                return idx
+        return len(rev)
 
     # ----------------------------------------------------------------------- #
     # MkDocs Hooks                                                            #
@@ -429,7 +455,14 @@ class AutorefsPlugin(BasePlugin[AutorefsConfig]):
         url_map = self._primary_url_map if primary else self._secondary_url_map
         if identifier in url_map:
             if url not in url_map[identifier]:
-                url_map[identifier].append(url)
+                idx_new = self._get_priority_index(url)
+                urls = url_map[identifier]
+                for i, existing in enumerate(urls):
+                    if idx_new < self._get_priority_index(existing):
+                        urls.insert(i, url)
+                        break
+                else:
+                    urls.append(url)
         else:
             url_map[identifier] = [url]
         if title and url not in self._title_map:

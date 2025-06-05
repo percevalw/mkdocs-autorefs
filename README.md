@@ -79,6 +79,19 @@ Current page | Candidate URLs | Relative URLs | Winner
 `a/b/` | `x/#e`, `a/c/d/#e`, `a/c/#e` | `a/c/d/#e`, `a/c/#e` (relative to parent `a/`) | `a/c/#e` (shortest distance)
 `a/b/c/` | `x/#e`, `a/#e`, `a/b/#e`, `a/b/c/d/#e`, `a/b/c/#e` | `a/b/c/d/#e`, `a/b/c/#e` | `a/b/c/#e` (shortest distance)
 
+### Prioritize pages
+
+If a heading title that appears several times throughout the site, set the priority parameter to decide which page will be linked. The priority list follows a regex and is tested in reverse: each anchor will be assigned the lowest priority amongst all of its matches.
+
+```yaml
+plugins:
+  - search
+  - autorefs:
+      priority:
+        - .*         # priority to all files
+        - reference  # except reference/... files
+```
+
 ### Markdown anchors
 
 The autorefs plugin offers a feature called "Markdown anchors". Such anchors can be added anywhere in a document, and linked to from any other place.
